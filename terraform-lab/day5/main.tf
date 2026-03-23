@@ -26,7 +26,7 @@ variable "file_count" {
 
 variable "base_message" {
   description = "Base message for files"
-  type        = string
+  type        = str
   default     = "Terraform CI Test"
 }
 
