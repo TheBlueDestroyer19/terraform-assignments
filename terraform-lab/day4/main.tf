@@ -9,28 +9,57 @@ terraform {
 
 provider "docker" {}
 
-# First container
-module "nginx1" {
+# Dynamic container configuration
+variable "container_config" {
+  description = "List of container configurations"
+  type = list(object({
+    name = string
+    port = number
+  }))
+
+  default = [
+    {
+      name = "web1"
+      port = 8081
+    },
+    {
+      name = "web2"
+      port = 8082
+    },
+    {
+      name = "web3"
+      port = 8083
+    },
+    {
+      name = "web4"
+      port = 8084
+    }
+  ]
+}
+
+# Convert list → map for for_each
+locals {
+  containers = {
+    for c in var.container_config :
+    c.name => c
+  }
+}
+
+# Dynamic module creation
+module "nginx_containers" {
   source = "./modules/nginx_container"
 
-  container_name = "nginx-1"
-  container_port = 8081
+  for_each = local.containers
+
+  container_name = each.value.name
+  container_port = each.value.port
   image_name     = "nginx:latest"
 }
 
-# Second container
-module "nginx2" {
-  source = "./modules/nginx_container"
-
-  container_name = "nginx-2"
-  container_port = 8082
-  image_name     = "nginx:latest"
-}
-
-# Output
-output "urls" {
+# Output URLs
+output "container_urls" {
   value = [
-    "http://localhost:8081",
-    "http://localhost:8082"
+    for c in var.container_config :
+    "http://localhost:${c.port}"
   ]
 }
